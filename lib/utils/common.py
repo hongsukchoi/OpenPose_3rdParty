@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 from enum import Enum
 
 
@@ -239,6 +240,8 @@ def draw_humans(npimg, humans, imgcopy=False):
             center = (int(body_part.x * image_w + 0.5), int(body_part.y * image_h + 0.5))
             centers[i] = center
             cv2.circle(npimg, center, 3, CocoColors[i], thickness=3, lineType=8, shift=0)
+            cv2.putText(npimg, str(i), center, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
+            import pdb; pdb.set_trace()
 
         # draw line
         for pair_order, pair in enumerate(CocoPairsRender):
@@ -249,7 +252,22 @@ def draw_humans(npimg, humans, imgcopy=False):
             cv2.line(npimg, centers[pair[0]], centers[pair[1]], CocoColors[pair_order], 3)
 
     return npimg
-    
+
+def parse_human_to_array(humans, image_h, image_w):
+    num_person = len(humans)
+    result = np.zeros((num_person, 19, 3))
+
+    for hi, human in enumerate(humans):
+        for i in range(CocoPart.Background.value):
+            if i not in human.body_parts.keys():
+                continue
+            body_part = human.body_parts[i]
+            x, y, score = body_part.x * image_w, body_part.y * image_h, body_part.score
+
+            result[hi, i] = x, y, score
+
+    return result
+
 class BodyPart:
     """
     part_idx : part index(eg. 0 for nose)

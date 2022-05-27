@@ -1,4 +1,8 @@
 hiddenlayer/
+.DS_Store
+*.out
+*.jpg
+*.zip
 *.pth
 *.caffemodel
 .idea/

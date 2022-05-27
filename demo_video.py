@@ -27,6 +27,7 @@ def ffprobe(file_path) -> FFProbeResult:
                      "-print_format", "json",
                      "-show_format",
                      "-show_streams",
+                     
                      file_path]
     result = subprocess.run(command_array, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     return FFProbeResult(return_code=result.returncode,
@@ -47,17 +48,20 @@ def process_frame(frame, body=True, hands=True):
     canvas = copy.deepcopy(frame)
     if body:
         candidate, subset = body_estimation(frame)
-        canvas = util.draw_bodypose(canvas, candidate, subset)
+        # canvas = util.draw_bodypose(canvas, candidate, subset)
     if hands:
         hands_list = util.handDetect(candidate, subset, frame)
+        is_left_list = []
         all_hand_peaks = []
         for x, y, w, is_left in hands_list:
             peaks = hand_estimation(frame[y:y+w, x:x+w, :])
             peaks[:, 0] = np.where(peaks[:, 0]==0, peaks[:, 0], peaks[:, 0]+x)
             peaks[:, 1] = np.where(peaks[:, 1]==0, peaks[:, 1], peaks[:, 1]+y)
-            all_hand_peaks.append(peaks)
-        canvas = util.draw_handpose(canvas, all_hand_peaks)
-    return canvas
+            is_left_list.append(is_left) 
+            all_hand_peaks.append(peaks.tolist())
+        #canvas = util.draw_handpose(canvas, all_hand_peaks)
+    # return canvas
+    return is_left_list, all_hand_peaks
 
 # writing video with ffmpeg because cv2 writer failed
 # https://stackoverflow.com/questions/61036822/opencv-videowriter-produces-cant-find-starting-number-error
@@ -111,29 +115,44 @@ class Writer():
         self.ff_proc.stdin.close()
         self.ff_proc.wait()
 
-
+output = []
+count = 1
 writer = None
 while(cap.isOpened()):
     ret, frame = cap.read()
     if frame is None:
         break
 
-    posed_frame = process_frame(frame, body=not args.no_body,
+    is_left_list, hand_list = process_frame(frame, body=not args.no_body,
                                        hands=not args.no_hands)
-
-    if writer is None:
+    # h, w = posed_frame.shape[:2]
+    # h, w = (h//2)*2, (w//2)*2
+    # posed_frame = posed_frame[:h, :w]
+    if False and writer is None:
         input_framesize = posed_frame.shape[:2]
         writer = Writer(output_file, input_fps, input_framesize, input_pix_fmt,
                         input_vcodec)
 
-    cv2.imshow('frame', posed_frame)
+    output.append({'is_left': is_left_list, 'hand': hand_list})
+    cv2.imwrite(f'./maru_frames/{count:06d}.jpg', frame)
+    print("processed frame: ", count)
+    count += 1
+    # cv2.imshow('frame', posed_frame)
 
     # write the frame
-    writer(posed_frame)
+    # writer(posed_frame)  
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    # cv2.waitKey(1)
+    # if cv2.waitKey(1) & 0xFF == ord('q'):
+    #    break
+
+import json
+with open('maru_openpose.json', 'w') as f:
+    json.dump(output, f)
+
 
 cap.release()
-writer.close()
-cv2.destroyAllWindows()
+#writer.close()
+#cv2.destroyAllWindows()

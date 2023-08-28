@@ -134,7 +134,7 @@ while(cap.isOpened()):
                         input_vcodec)
 
     output.append({'is_left': is_left_list, 'hand': hand_list})
-    cv2.imwrite(f'./maru_frames/{count:06d}.jpg', frame)
+    cv2.imwrite(f'./trial1_frames/{count:06d}.jpg', frame)
     print("processed frame: ", count)
     count += 1
     # cv2.imshow('frame', posed_frame)
@@ -149,7 +149,7 @@ while(cap.isOpened()):
     #    break
 
 import json
-with open('maru_openpose.json', 'w') as f:
+with open('trial1_openpose.json', 'w') as f:
     json.dump(output, f)
 
 

@@ -62,7 +62,7 @@ class Hand(object):
             binary = np.ascontiguousarray(one_heatmap > thre, dtype=np.uint8)
             # 全部小于阈值
             if np.sum(binary) == 0:
-                all_peaks.append([0, 0])
+                all_peaks.append([0, 0, 0])
                 continue
             label_img, label_numbers = label(binary, return_num=True, connectivity=binary.ndim)
             max_index = np.argmax([np.sum(map_ori[label_img == i]) for i in range(1, label_numbers + 1)]) + 1
@@ -70,7 +70,7 @@ class Hand(object):
             map_ori[label_img == 0] = 0
 
             y, x = util.npmax(map_ori)
-            all_peaks.append([x, y])
+            all_peaks.append([x, y, float(map_ori[y,x])])
         return np.array(all_peaks)
 
 if __name__ == "__main__":

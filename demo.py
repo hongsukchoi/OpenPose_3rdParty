@@ -28,14 +28,14 @@ def y_flip(bbox, height):
 body_estimation = Body('model/body_pose_model.pth')
 hand_estimation = Hand('model/hand_pose_model.pth')
 
-cam_indices = [0,1,2,3,4,5,6]
+cam_indices = [4,5,6] # 0,1,2,3,
 
-data_dir = '/home/hongsuk.c/Projects/HandNeRF_annotation/data/handnerf_training_2'
+data_dir = '/home/hongsuk.c/Projects/HandNeRF_annotation/data/handnerf_training_test'
 for cam_idx in cam_indices:
     save_dir = f'{data_dir}/cam_{cam_idx}_keypoints'
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
-    folder = f'{data_dir}/cam_{cam_idx}'# '/labdata/hongsuk/HandForce/Data/10042022_isaac/realsense/'  # './images'
+    folder = f'{data_dir}/cam_{cam_idx}' 
     files = sorted(glob.glob(folder + '/*_*.jpg'))
     print(len(files))
     for file in tqdm(sorted(files)):
@@ -56,6 +56,14 @@ for cam_idx in cam_indices:
         for shape in ann["shapes"]:
             if "hand" in shape["label"] and "rectangle" == shape["shape_type"]:
                 hb = np.array(shape["points"]).reshape(-1) # xy xy 
+                # sanitize
+                hb = np.clip(hb, 0, a_max=None)
+                # check x1y1 <x2y2
+                if hb[2] < hb[0]:
+                    hb = np.array([hb[2], hb[3], hb[0], hb[1]])
+                hb[2] = min(hb[2], oriImg.shape[1]-1)
+                hb[3] = min(hb[3], oriImg.shape[0]-1)
+
                 is_left  = False
                 # flip
                 cam_idx = int(file.split('/')[-2].split('_')[-1]) 
@@ -76,7 +84,8 @@ for cam_idx in cam_indices:
                 # [int(x), int(y), int(width), is_left]
                 
         if len(hands_list) == 0:
-            import pdb; pdb.set_trace()
+            continue
+            # import pdb; pdb.set_trace()
 
 
         all_hand_peaks = []
@@ -104,7 +113,6 @@ for cam_idx in cam_indices:
             # peaks = peaks[:, :2]
 
             all_hand_peaks.append(peaks)
-            break
         
         kp_annot = copy.deepcopy(kp_annot_template)
         kp_annot["people"][0]["pose_keypoints_2d"] = []
@@ -114,8 +122,11 @@ for cam_idx in cam_indices:
         with open(save_path, 'w') as f:
             json.dump(kp_annot, f)
 
-        # VIS
+        # # VIS
         # canvas = util.draw_handpose(canvas, all_hand_peaks)
+        # save_path = os.path.join(save_dir, os.path.basename(file))
+
+        # cv2.imwrite(save_path, canvas)
         # plt.imshow(canvas[:, :, [2, 1, 0]])
         # plt.axis('off')
         # plt.show()

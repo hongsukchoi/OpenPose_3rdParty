@@ -91,12 +91,12 @@ def draw_handpose(canvas, all_hand_peaks, show_number=False):
     for peaks in all_hand_peaks:
         for ie, e in enumerate(edges):
             if np.sum(np.all(peaks[e], axis=1)==0)==0:
-                x1, y1 = peaks[e[0]]
-                x2, y2 = peaks[e[1]]
+                x1, y1, _ = peaks[e[0]]
+                x2, y2, _ = peaks[e[1]]
                 ax.plot([x1, x2], [y1, y2], color=matplotlib.colors.hsv_to_rgb([ie/float(len(edges)), 1.0, 1.0]))
 
         for i, keyponit in enumerate(peaks):
-            x, y = keyponit
+            x, y, _ = keyponit
             ax.plot(x, y, 'r.')
             if show_number:
                 ax.text(x, y, str(i))
